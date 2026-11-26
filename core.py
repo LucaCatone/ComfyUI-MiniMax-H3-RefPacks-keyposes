@@ -254,7 +254,7 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False,
             elif not any(e["kind"] == "image" for e in g["entries"]):
                 for label in ls:
                     mapping = next((e.get("proxy_colors") or e.get("standin_map") for e in g["entries"] if e.get("proxy_colors") or e.get("standin_map")), "")
-                    definitions.append(f"{label} is a key-pose reference, not footage: it shows the key poses of the shot in playback order, each held at its moment and separated by cuts, using colored stand-ins. The stand-ins' positions, left-right order, occlusion and camera height must be followed exactly; the motion between the poses is generated smoothly. The stand-ins' colors and surfaces are replaced by the referenced characters; each distinct colored stand-in is exactly one person. It is never shown in the target video." + (f" Colour mapping: {mapping}" if mapping else ""))
+                    definitions.append(f"{label} is a key-pose reference, not footage: a sequence of held poses separated by cuts, in playback order; the motion between the poses is generated smoothly. Each colored stand-in is exactly one person, and that person's body follows the stand-in's positions, left-right order, occlusion and camera height. The stand-ins' colors and surfaces are never shown and are replaced by the real appearance of those people." + (f" Colour mapping: {mapping}" if mapping else ""))
         elif g["role"] in ("video", "motion"):
             if g["role"] == "motion":
                 alias = f"<Motion {g['role_id']}>"
@@ -313,7 +313,7 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False,
             if label in keypose_times else
             f"{label} (key frame in order): weak_reference - reproduced in that order within one continuous take; it is never shown as a still image, and the motion between key frames is continuous."
             if label in keypose_frames else
-            f"{label} (key poses, their order, body positions, camera height): weak_reference - the key poses, their order, the stand-ins' positions, left-right order, occlusion and camera height are followed; smooth motion is generated between the poses; the stand-ins' surfaces and colors are replaced by the referenced characters and never appear; no extra people appear beyond those referenced."
+            f"{label} (key poses, their order, positions, camera height): weak_reference - each person's body follows its stand-in's pose, in order; the stand-in surfaces are never shown; no extra people appear beyond those referenced."
             for label in keypose_labels)
         retention = subject_retention
         if keypose_retention:
