@@ -24,6 +24,72 @@ Other changes over upstream:
 
 ---
 
+## Ideal workflow for `keyposes`
+
+End-to-end recipe for turning a handful of static poses into a moving shot. The numbers below are the
+configuration that was tested; treat them as defaults, not laws.
+
+### 1. Produce the pose video
+
+- One **coloured proxy** per body. One colour per whole body, distinct colours between bodies
+  (e.g. blue = the partner, pink = the camera body).
+- **Neutral background**: no room, no furniture detail, no textures. The room comes from the character
+  and location references, not from the pose video.
+- **Hold each pose** for its moment (~1 s) and interpolate 2-4 frames between poses. Hard cuts are what
+  make H3 stutter or duplicate bodies; `constant` interpolation is the usual culprit.
+- Render at **24 fps**. The frame count does not have to match the output: `duration` stretches it.
+- Optional: the exact opening frame, reused later as an `AddGuide` on frame 0.
+
+### 2. Encode the pack
+
+| Field | Value | Why |
+|---|---|---|
+| `duration` | the shot length in seconds | stretches the poses over the whole shot, no fps math |
+| `proxy_colors` | `the blue mannequin is <Character 1>; the pink limbs are the camera body` | binds each proxy to its subject |
+| `reference_megapixels` | 0.2-0.3 | 0.1 is too coarse for body poses; 0.3 is the tested size |
+| `frame_policy` | pad final frame | keeps the last pose instead of trimming it |
+
+### 3. Wire it
+
+`Encode H3 Video Refpack` -> `Add RefPack` with role **keyposes** -> `RefPack to H3 Encoder`.
+
+`motion` is for continuous footage, `keyposes` is for discrete poses. Mixing them up gives either a
+frozen subject or a stuttering one.
+
+### 4. Write the instruction
+
+Say **what happens, in order**, and name the subjects. Leave the timing to the compiler.
+
+```text
+A single continuous first-person shot: a young man sits on the sofa watching the television, then
+turns his head to the left toward <Character 1>, then goes near him, touching him first near the face
+and then between his legs. <Poses 1> defines the poses and their order.
+```
+
+The compiler adds the pose definitions, one retention line per pose, and the timing list.
+
+### 5. Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| The subject stays perfectly still | `reference_megapixels` too low (0.1 destroys the pose), or `proxy_colors` missing so nothing binds the motion to the character |
+| A proxy colour becomes a prop (blue slipper, cyan patch) | `proxy_colors` missing, or a saturated colour at the frame edge; add the mapping and crop the edge |
+| The last pose is never reached | the reference is shorter than the output: set `duration` to the shot length; if it still misses, add one `AddGuide` on the last frame |
+| The motion stutters, bodies duplicate | the reference was decimated (frames skipped) instead of held; re-encode with holds and transitions |
+| Room or sofa comes from the reference | the pose frames carry a background; use a neutral background or crop |
+| Everything looks grey or plastic | no style sentence in the instruction; add one ("realistic handheld footage, natural daylight") |
+
+### 6. Checklist
+
+- [ ] one distinct proxy colour per body, neutral background
+- [ ] `duration` equals the output length
+- [ ] `proxy_colors` filled and visible under `PACK COUNTS` in the Inspector
+- [ ] character pack at 0.3 MP or more, pose pack at 0.2-0.3 MP
+- [ ] instruction names subjects and order; no timestamps needed
+- [ ] `video_vision` on
+
+---
+
 **Reusable image, video and audio references for MiniMax H3, with role-aware prompting and complete scene reuse.**
 
 Prepare your characters, objects, outfits, locations, motion clips and audio once. Assign their roles, describe the shot, and let the H3 receiver bind the cached references to native H3 conditioning.
