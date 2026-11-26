@@ -48,10 +48,23 @@ configuration that was tested; treat them as defaults, not laws.
 
 | Field | Value | Why |
 |---|---|---|
-| `duration` | **the same length as the encoder's `length`** | stretches the poses over the whole shot; if it is shorter, the tail of the shot has no reference and the last pose is dropped |
-| `proxy_colors` | `the blue mannequin is <Character 1>; the pink limbs are the camera body` | binds each proxy to its subject |
-| `reference_megapixels` | 0.2-0.3 | 0.1 is too coarse for body poses; 0.3 is the tested size |
+| `duration` | **the same length as the encoder's `length`** — e.g. `5` for a 124-frame shot | stretches the poses over the whole shot; if it is shorter, the tail of the shot has no reference and the last pose is dropped |
+| `proxy_colors` | `the blue mannequin is <Character 1>; the pink limbs and arms are from the camera body` | binds each proxy to its subject |
+| `reference_megapixels` | `0.3` (0.2 works, 0.1 does not) | 0.1 is too coarse for body poses; 0.3 is the tested size |
 | `frame_policy` | pad final frame | keeps the last pose instead of trimming it |
+
+Current tested pack: 5 stills, `duration = 5`, `reference_megapixels = 0.3`, role `keyposes`, output `length = 124`,
+`video_vision` on. That combination keeps the room, keeps the hands and reaches the final beat.
+
+### 2b. Known limitations
+
+- A saturated proxy colour can still become an object if it sits in isolation near a limb — the usual
+  symptom is a blue slipper or a cyan patch on the floor. Mitigations: use neutral or dark proxies,
+  keep every proxy fully inside the frame, and add `no shoes, no slippers, no props derived from the
+  proxies` to the instruction.
+- If the pack is shorter than the shot (for example `duration = 3` with `length = 124`), the first
+  ~62% of the clip is guided and the rest drifts. The subject then looks "mostly static" because the
+  poses that should arrive late were never in the reference.
 
 ### 3. Wire it
 
