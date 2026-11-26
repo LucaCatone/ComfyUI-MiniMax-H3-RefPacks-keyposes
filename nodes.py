@@ -119,8 +119,8 @@ class BExplainsH3EncodeVideo:
                              "name": ("STRING", {"default": "dance"}),
                              "reference_megapixels": ("FLOAT", {"default": 0.3, "min": 0.01, "max": 2.0, "step": 0.05, "tooltip": "Max area for the encoded reference; downscales only, never upscales. 0.3 keeps ~416x736; 0.1 is enough for pose/motion references and is cheaper."}),
                              "frame_policy": (["pad final frame", "trim tail"], {"tooltip": "How to snap to the 17n+5 grid when the count is off: pad duplicates the last frame (keeps the ending), trim drops the tail (can lose up to 16 frames)."})},
-                "optional": {"standin_map": ("STRING", {"multiline": True, "default": "",
-                    "tooltip": "Which stand-in is which subject, e.g. 'the blue stand-in is <Character 1>; the red limbs are the camera body'. Stored in the pack and appended to the prompt definition."}),
+                "optional": {"proxy_colors": ("STRING", {"multiline": True, "default": "",
+                    "tooltip": "Which coloured mannequin is which subject. Example: 'the blue mannequin is <Character 1>; the red limbs are the camera body'. Saved in the pack and appended to the prompt definition."}),
                     "duration": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 170.0, "step": 0.05,
                     "tooltip": "Target reference length in seconds. When > 0 it overrides fps and stretches or shrinks the input frames to the H3-aligned frame count (e.g. 5 s -> 124 frames)."})}}
     RETURN_TYPES = (PACK_TYPE,)
@@ -129,7 +129,7 @@ class BExplainsH3EncodeVideo:
     CATEGORY = CATEGORY
     DESCRIPTION = "Resample video to H3's 24 fps, align to 17n+5 frames, encode once and retain the native 2 fps text-encoder vision frames. Audio is not included."
 
-    def encode(self, vae, frames, fps, name, reference_megapixels, frame_policy, duration=0.0, standin_map=""):
+    def encode(self, vae, frames, fps, name, reference_megapixels, frame_policy, duration=0.0, proxy_colors=""):
         if frames.shape[0] < 2:
             raise ValueError("Provide decoded video frames, not a single still image.")
         if duration > 0:
@@ -154,7 +154,7 @@ class BExplainsH3EncodeVideo:
         indices = list(range(0, n, 12))
         entry = _entry("video", vae.encode(pixels), pixels[indices], [i/24.0 for i in indices],
                        frame_count=n, fps=24.0, original_resampled_frames=original, frame_policy=frame_policy,
-                       standin_map=standin_map.strip())
+                       proxy_colors=proxy_colors.strip())
         return (_pack(name, "h3_video", [entry], vae),)
 
 
