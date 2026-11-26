@@ -253,7 +253,8 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False,
                 definitions.append(f"{' and '.join(ls)} are consecutive key frames of the same shot, in this order. Each picture is one moment of one continuous take: treat them as frames of the target video, never as portraits, separate subjects or separate shots.")
             elif not any(e["kind"] == "image" for e in g["entries"]):
                 for label in ls:
-                    definitions.append(f"{label} is a key-pose reference, not footage: it shows the key poses of the shot in playback order, each held at its moment and separated by cuts, using colored stand-ins. The stand-ins' positions, left-right order, occlusion and camera height must be followed exactly; the motion between the poses is generated smoothly. The stand-ins' colors and surfaces are replaced by the referenced characters; each distinct colored stand-in is exactly one person. It is never shown in the target video.")
+                    mapping = next((e.get("standin_map") for e in g["entries"] if e.get("standin_map")), "")
+                    definitions.append(f"{label} is a key-pose reference, not footage: it shows the key poses of the shot in playback order, each held at its moment and separated by cuts, using colored stand-ins. The stand-ins' positions, left-right order, occlusion and camera height must be followed exactly; the motion between the poses is generated smoothly. The stand-ins' colors and surfaces are replaced by the referenced characters; each distinct colored stand-in is exactly one person. It is never shown in the target video." + (f" Stand-in mapping: {mapping}" if mapping else ""))
         elif g["role"] in ("video", "motion"):
             if g["role"] == "motion":
                 alias = f"<Motion {g['role_id']}>"
@@ -278,6 +279,10 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False,
     explicit_outfit = any(alias in text for alias in outfit_aliases) or any(label in text for label in outfit_labels)
     for alias, actual in {**typed_aliases, **outfit_aliases, **location_aliases}.items():
         text = text.replace(alias, actual)
+    for i, definition in enumerate(definitions):
+        for alias, actual in {**typed_aliases, **outfit_aliases, **location_aliases}.items():
+            definition = definition.replace(alias, actual)
+        definitions[i] = definition
     unknown_role = re.search(r"<(Character|Item|Motion|Poses|Outfit|Location|Style) \d+>", text)
     if unknown_role:
         raise ValueError(f"Prompt refers to missing {unknown_role.group(0)}. Check the reference map.")

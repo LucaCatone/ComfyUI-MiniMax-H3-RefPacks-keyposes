@@ -16,7 +16,10 @@ Other changes over upstream:
 - The encoder has a **`video_vision`** toggle: when off, the reference video is kept out of the text
   encoder (one frame only). Cheaper, but the subject often freezes — the latent alone does not carry the
   motion semantics. Shrink `reference_megapixels` instead when you need to save time.
-- Tooltips on `fps`, `duration`, `frame_policy` and `reference_megapixels`.
+- The video encoder also takes a **`standin_map`** field: declare which colored stand-in is which
+  subject (`the blue stand-in is <Character 1>; the red limbs are the camera body`). It is stored in the
+  pack and appended to the prompt definition, aliases resolved.
+- Tooltips on `fps`, `duration`, `frame_policy`, `standin_map` and `reference_megapixels`.
 - Installs from `git clone` as-is: the shared package is discovered under its `-keyposes` folder name.
 
 ---
