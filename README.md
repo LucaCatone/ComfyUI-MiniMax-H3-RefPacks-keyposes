@@ -48,13 +48,18 @@ configuration that was tested; treat them as defaults, not laws.
 
 | Field | Value | Why |
 |---|---|---|
-| `duration` | **the same length as the encoder's `length`** — e.g. `5` for a 124-frame shot | stretches the poses over the whole shot; if it is shorter, the tail of the shot has no reference and the last pose is dropped |
+| `duration` | `3` (what is currently used) | stretches the 5 stills over 3 s (73 frames) by duplicating frames |
 | `proxy_colors` | `the blue mannequin is <Character 1>; the pink limbs and arms are from the camera body` | binds each proxy to its subject |
 | `reference_megapixels` | `0.3` (0.2 works, 0.1 does not) | 0.1 is too coarse for body poses; 0.3 is the tested size |
 | `frame_policy` | pad final frame | keeps the last pose instead of trimming it |
 
-Current tested pack: 5 stills, `duration = 5`, `reference_megapixels = 0.3`, role `keyposes`, output `length = 124`,
-`video_vision` on. That combination keeps the room, keeps the hands and reaches the final beat.
+Current configuration: 5 stills, `duration = 3`, `reference_megapixels = 0.3`, role `keyposes`,
+output `length = 124`, `video_vision` on, one character pack at 1.0 MP.
+
+With this configuration the room, the hands and the final beat are correct. The remaining defect is the
+pose transfer: the character keeps roughly one posture instead of following the five poses. Raising
+`duration` to 5 (a 124-frame reference matching the output) did **not** change that, so the duration
+mismatch is not the confirmed cause.
 
 ### 2b. Known limitations
 
@@ -62,9 +67,13 @@ Current tested pack: 5 stills, `duration = 5`, `reference_megapixels = 0.3`, rol
   symptom is a blue slipper or a cyan patch on the floor. Mitigations: use neutral or dark proxies,
   keep every proxy fully inside the frame, and add `no shoes, no slippers, no props derived from the
   proxies` to the instruction.
-- If the pack is shorter than the shot (for example `duration = 3` with `length = 124`), the first
-  ~62% of the clip is guided and the rest drifts. The subject then looks "mostly static" because the
-  poses that should arrive late were never in the reference.
+- A pack shorter than the shot (`duration = 3` with `length = 124`) guides only the first ~62% of the
+  clip, so the late poses have no reference. That said, matching the two lengths was tested and did not
+  fix the pose transfer, so treat this as a hygiene rule rather than the cause of a static subject.
+- The pose transfer is still the open problem with this role: the subject tends to hold one posture even
+  when the reference contains clearly different poses. `proxy_colors`, `0.3` MP and matching durations
+  are all in place; what remains is the model's weak binding between held poses and the rendered body.
+  A hard `AddGuide` on the first and last pose is the reliable workaround today.
 
 ### 3. Wire it
 
