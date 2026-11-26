@@ -1,6 +1,6 @@
 [project]
-name = "bexplains-h3-refpacks"
-version = "1.1.2"
+name = "bexplains-h3-refpacks-keyposes"
+version = "1.1.2+keyposes.1"
 description = "Reusable image, video and audio references with role-aware prompting for native MiniMax H3. Requires BExplains RefPacks."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -9,9 +9,9 @@ dependencies = ["safetensors>=0.4.3"]
 classifiers = ["Operating System :: OS Independent"]
 
 [project.urls]
-Repository = "https://github.com/BExplains/ComfyUI-MiniMax-H3-RefPacks"
-"Bug Tracker" = "https://github.com/BExplains/ComfyUI-MiniMax-H3-RefPacks/issues"
+Repository = "https://github.com/LucaCatone/ComfyUI-MiniMax-H3-RefPacks-keyposes"
+"Bug Tracker" = "https://github.com/LucaCatone/ComfyUI-MiniMax-H3-RefPacks-keyposes/issues"
 
 [tool.comfy]
 PublisherId = "bexplains"
-DisplayName = "MiniMax H3 RefPacks (BExplains)"
+DisplayName = "MiniMax H3 RefPacks (keyposes fork)"
