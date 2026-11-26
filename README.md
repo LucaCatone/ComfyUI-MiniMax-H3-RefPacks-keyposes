@@ -65,9 +65,9 @@ frozen subject or a stuttering one.
 Say **what happens, in order**, and name the subjects. Leave the timing to the compiler.
 
 ```text
-A single continuous first-person shot: a young man sits on the sofa watching the television, then
-turns his head to the left toward <Character 1>, then goes near him, touching him first near the face
-and then between his legs. <Poses 1> defines the poses and their order.
+A single continuous first-person shot: a young man sits on the sofa watching the television, then turns
+his head to the left toward <Character 1>, who leans in and rests a hand on the backrest. <Poses 1>
+defines the poses and their order.
 ```
 
 The compiler adds the pose definitions, one retention line per pose, and the timing list.
