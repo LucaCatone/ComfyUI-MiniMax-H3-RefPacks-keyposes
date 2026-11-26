@@ -288,6 +288,8 @@ class BExplainsH3RefPackConditioning:
                         "tooltip": "Off: use the leading reference window, capped at output length, like native H3. On: present the complete reference even for a shorter output; H3 may condense the routine. This is not deterministic retiming."}),
                     "allow_raw_prompt": ("BOOLEAN", {"default": False,
                         "tooltip": "Allow structured H3 section prompts or JSON with H3 section keys to pass through exactly as entered. Skips prompt expansion, aliases, auto-outfit and prompt tag checks. Plain shot instructions still compile normally; reference tensors remain attached."}),
+                    "video_vision": ("BOOLEAN", {"default": True,
+                        "tooltip": "On (default): send the reference video's sampled frames to the text encoder for semantic understanding. Off: keep only one frame, so the text encoder is much cheaper while the full VAE latent still drives positions and motion."}),
                     "generation_mode": (["Auto", "Image", "Video"], {"default": "Auto",
                         "tooltip": "Auto: length 1-4 generates that many independent images; length 5+ generates video. Video mode requires an H3 video model and video-capable decoder; length is rounded up to 17n+5 at 24 fps, with 5 frames minimum (even when length is 1-4). Image mode forces still output: length 1-4 is the image batch count; larger lengths produce one image. The VAE no longer selects the mode."})}}
     RETURN_TYPES = ("MODEL", "CONDITIONING", "CONDITIONING", "LATENT", "STRING")
@@ -296,7 +298,7 @@ class BExplainsH3RefPackConditioning:
     CATEGORY = CATEGORY
     DESCRIPTION = "Assemble all references before fresh prompt encoding. Present cached images/video frames to H3's text encoder and attach the matching cached VAE latents. No VAE runs here."
 
-    def compile(self, model, clip, references, prompt, negative_prompt, width, height, length, auto_outfit, log_performance=True, compress_motion=False, vae=None, allow_raw_prompt=False, generation_mode="Auto"):
+    def compile(self, model, clip, references, prompt, negative_prompt, width, height, length, auto_outfit, log_performance=True, compress_motion=False, vae=None, allow_raw_prompt=False, generation_mode="Auto", video_vision=True):
         started = time.perf_counter()
         task = model_target(model)
         fallback = ""
@@ -336,7 +338,7 @@ class BExplainsH3RefPackConditioning:
             else:
                 import comfy.model_management
                 latent = {"samples": torch.zeros([batch_size,24,1,height//16,width//16],device=comfy.model_management.intermediate_device())}
-        compiled, blocks, items, mapping = assemble(references,prompt,task,auto_outfit,allow_raw_prompt=allow_raw_prompt,shot_frames=actual_length if intent == "h3_video" else None)
+        compiled, blocks, items, mapping = assemble(references,prompt,task,auto_outfit,allow_raw_prompt=allow_raw_prompt,shot_frames=actual_length if intent == "h3_video" else None, video_vision=video_vision)
         tokenize_args = {"minimax_ref_items": items} if task == "h3_video" else {"images": [i["data"] for i in items], "picture_label": "Picture %d: "}
         if intent == "h3_video":
             mapping += "\nReference policy: " + ("Compress Motion — complete source clips" if compress_motion else "native leading window, capped at output length")
@@ -398,9 +400,9 @@ class BExplainsRefPackToH3(BExplainsH3RefPackConditioning):
     RETURN_NAMES = BExplainsH3RefPackConditioning.RETURN_NAMES + ("vae",)
     DESCRIPTION = "H3 receiver: Auto selects images for length 1-4 and video for length 5+. Image/Video explicitly overrides Auto. Image lengths 1-4 are independent batch items with T=1; greater lengths fall back to one image. The model still selects native conditioning format. Connect the VAE output to VAEDecode."
 
-    def compile(self, model, clip, references, prompt, negative_prompt, width, height, length, auto_outfit, vae, log_performance=True, compress_motion=False, allow_raw_prompt=False, generation_mode="Auto"):
+    def compile(self, model, clip, references, prompt, negative_prompt, width, height, length, auto_outfit, vae, log_performance=True, compress_motion=False, allow_raw_prompt=False, generation_mode="Auto", video_vision=True):
         result = super().compile(model, clip, references, prompt, negative_prompt, width, height, length, auto_outfit,
-                                 log_performance=log_performance, compress_motion=compress_motion, vae=vae, allow_raw_prompt=allow_raw_prompt, generation_mode=generation_mode)
+                                 log_performance=log_performance, compress_motion=compress_motion, vae=vae, allow_raw_prompt=allow_raw_prompt, generation_mode=generation_mode, video_vision=video_vision)
         return result + (vae,)
 
 

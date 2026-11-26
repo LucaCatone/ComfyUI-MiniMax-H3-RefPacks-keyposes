@@ -169,7 +169,7 @@ def _timecode(frame):
     return f"{minutes:02d}:{seconds - minutes * 60:06.3f}"
 
 
-def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False, shot_frames=None):
+def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False, shot_frames=None, video_vision=True):
     ordered = list(reference_layout(references))
     if task not in ("h3_image", "h3_video"):
         raise ValueError("Unsupported receiving model family.")
@@ -191,7 +191,11 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False,
         item = {"type": kind, "data": e["vision"]}
         if kind == "video":
             block.update(latent_t=z.shape[2], ref_audio_t=0, audio_latent=None)
-            item["timestamps"] = list(e["timestamps"])
+            if video_vision:
+                item["timestamps"] = list(e["timestamps"])
+            else:
+                item["data"] = e["vision"][:1]
+                item["timestamps"] = list(e["timestamps"])[:1]
         blocks.append(block)
         items.append(item)
     definitions, outfit_aliases, location_aliases, report, subject_ids = [], {}, {}, [], set()
