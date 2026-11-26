@@ -118,18 +118,25 @@ class BExplainsH3EncodeVideo:
         return {"required": {"vae": ("VAE",), "frames": ("IMAGE",), "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 240.0}),
                              "name": ("STRING", {"default": "dance"}),
                              "reference_megapixels": ("FLOAT", {"default": 0.3, "min": 0.01, "max": 2.0, "step": 0.05}),
-                             "frame_policy": (["pad final frame", "trim tail"],)}}
+                             "frame_policy": (["pad final frame", "trim tail"],)},
+                "optional": {"duration": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 170.0, "step": 0.05,
+                    "tooltip": "Target reference length in seconds. When > 0 it overrides fps and stretches or shrinks the input frames to the H3-aligned frame count (e.g. 5 s -> 124 frames)."})}}
     RETURN_TYPES = (PACK_TYPE,)
     RETURN_NAMES = ("refpack",)
     FUNCTION = "encode"
     CATEGORY = CATEGORY
     DESCRIPTION = "Resample video to H3's 24 fps, align to 17n+5 frames, encode once and retain the native 2 fps text-encoder vision frames. Audio is not included."
 
-    def encode(self, vae, frames, fps, name, reference_megapixels, frame_policy):
+    def encode(self, vae, frames, fps, name, reference_megapixels, frame_policy, duration=0.0):
         if frames.shape[0] < 2:
             raise ValueError("Provide decoded video frames, not a single still image.")
-        n = max(5, round(frames.shape[0] * 24.0 / fps))
-        indices = (torch.arange(n, device=frames.device) * fps / 24.0).floor().long().clamp(max=frames.shape[0]-1)
+        if duration > 0:
+            from .duration import h3_duration_frames
+            n = h3_duration_frames(duration)
+            indices = (torch.arange(n, device=frames.device) * frames.shape[0] / n).floor().long().clamp(max=frames.shape[0] - 1)
+        else:
+            n = max(5, round(frames.shape[0] * 24.0 / fps))
+            indices = (torch.arange(n, device=frames.device) * fps / 24.0).floor().long().clamp(max=frames.shape[0]-1)
         frames = frames[indices]
         original = n
         if frame_policy == "pad final frame":
