@@ -29,22 +29,26 @@ Other changes over upstream:
 End-to-end recipe for turning a handful of static poses into a moving shot. The numbers below are the
 configuration that was tested; treat them as defaults, not laws.
 
-### 1. Produce the pose video
+### 1. Produce the pose frames
 
+- **One still per key pose.** No animation needed: a batch of 5 stills is enough. The encoder stretches
+  them over the whole shot by duplicating frames, so each pose is held for its share of the timeline.
 - One **coloured proxy** per body. One colour per whole body, distinct colours between bodies
-  (e.g. blue = the partner, pink = the camera body).
+  (e.g. blue = the partner, pink = the camera body). Never reuse a colour for two bodies.
 - **Neutral background**: no room, no furniture detail, no textures. The room comes from the character
-  and location references, not from the pose video.
-- **Hold each pose** for its moment (~1 s) and interpolate 2-4 frames between poses. Hard cuts are what
-  make H3 stutter or duplicate bodies; `constant` interpolation is the usual culprit.
-- Render at **24 fps**. The frame count does not have to match the output: `duration` stretches it.
+  and location references, not from the pose frames.
+- Because the encoder duplicates frames, the reference contains hard cuts between holds rather than
+  real motion. That is expected: the `keyposes` wording exists to tell the model to generate the motion
+  between the poses. Adding 2-4 frame crossfades before encoding is optional, not required.
+- Resolution: **0.2-0.3 MP per frame** is enough. Below that the pose stops being legible and the
+  subject freezes instead of moving.
 - Optional: the exact opening frame, reused later as an `AddGuide` on frame 0.
 
 ### 2. Encode the pack
 
 | Field | Value | Why |
 |---|---|---|
-| `duration` | the shot length in seconds | stretches the poses over the whole shot, no fps math |
+| `duration` | **the same length as the encoder's `length`** | stretches the poses over the whole shot; if it is shorter, the tail of the shot has no reference and the last pose is dropped |
 | `proxy_colors` | `the blue mannequin is <Character 1>; the pink limbs are the camera body` | binds each proxy to its subject |
 | `reference_megapixels` | 0.2-0.3 | 0.1 is too coarse for body poses; 0.3 is the tested size |
 | `frame_policy` | pad final frame | keeps the last pose instead of trimming it |
@@ -74,7 +78,7 @@ The compiler adds the pose definitions, one retention line per pose, and the tim
 |---|---|
 | The subject stays perfectly still | `reference_megapixels` too low (0.1 destroys the pose), or `proxy_colors` missing so nothing binds the motion to the character |
 | A proxy colour becomes a prop (blue slipper, cyan patch) | `proxy_colors` missing, or a saturated colour at the frame edge; add the mapping and crop the edge |
-| The last pose is never reached | the reference is shorter than the output: set `duration` to the shot length; if it still misses, add one `AddGuide` on the last frame |
+| The last pose is never reached | the reference is shorter than the output: check `frame_count` under `PACK COUNTS` in the Inspector against your `length`, and set `duration` to match; if it still misses, add one `AddGuide` on the last frame |
 | The motion stutters, bodies duplicate | the reference was decimated (frames skipped) instead of held; re-encode with holds and transitions |
 | Room or sofa comes from the reference | the pose frames carry a background; use a neutral background or crop |
 | Everything looks grey or plastic | no style sentence in the instruction; add one ("realistic handheld footage, natural daylight") |
@@ -82,7 +86,7 @@ The compiler adds the pose definitions, one retention line per pose, and the tim
 ### 6. Checklist
 
 - [ ] one distinct proxy colour per body, neutral background
-- [ ] `duration` equals the output length
+- [ ] `duration` equals the output length (compare `frame_count` in the Inspector with `length`)
 - [ ] `proxy_colors` filled and visible under `PACK COUNTS` in the Inspector
 - [ ] character pack at 0.3 MP or more, pose pack at 0.2-0.3 MP
 - [ ] instruction names subjects and order; no timestamps needed
