@@ -1,4 +1,15 @@
-# MiniMax H3 RefPacks
+# MiniMax H3 RefPacks — keyposes fork
+
+A fork of [BExplains MiniMax H3 RefPacks](https://github.com/BExplains/ComfyUI-MiniMax-H3-RefPacks)
+that adds one role: **`keyposes`**.
+
+> Assign it a pack of still key frames (or a single pose video) and the compiled prompt treats them as
+consecutive moments of one continuous take, instead of as portraits or separate shots. Each frame is
+labelled with its moment in `retention_analysis`, and `detailed_description` gets a compact timing list
+whose timestamps are spread evenly across the shot length — so the reference no longer has to match
+the output duration.
+
+---
 
 **Reusable image, video and audio references for MiniMax H3, with role-aware prompting and complete scene reuse.**
 
