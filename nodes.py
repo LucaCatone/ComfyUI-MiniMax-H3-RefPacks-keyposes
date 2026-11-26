@@ -289,7 +289,7 @@ class BExplainsH3RefPackConditioning:
                     "allow_raw_prompt": ("BOOLEAN", {"default": False,
                         "tooltip": "Allow structured H3 section prompts or JSON with H3 section keys to pass through exactly as entered. Skips prompt expansion, aliases, auto-outfit and prompt tag checks. Plain shot instructions still compile normally; reference tensors remain attached."}),
                     "video_vision": ("BOOLEAN", {"default": True,
-                        "tooltip": "On (default): send the reference video's sampled frames to the text encoder for semantic understanding. Off: keep only one frame, so the text encoder is much cheaper while the full VAE latent still drives positions and motion."}),
+                        "tooltip": "On (default): send the reference video's sampled frames to the text encoder, which is what binds the motion to the subject. Off: keep one frame only; cheaper, but the subject often stays still because the latent alone does not carry the motion semantics. Shrink reference_megapixels instead if you need to save time."}),
                     "generation_mode": (["Auto", "Image", "Video"], {"default": "Auto",
                         "tooltip": "Auto: length 1-4 generates that many independent images; length 5+ generates video. Video mode requires an H3 video model and video-capable decoder; length is rounded up to 17n+5 at 24 fps, with 5 frames minimum (even when length is 1-4). Image mode forces still output: length 1-4 is the image batch count; larger lengths produce one image. The VAE no longer selects the mode."})}}
     RETURN_TYPES = ("MODEL", "CONDITIONING", "CONDITIONING", "LATENT", "STRING")

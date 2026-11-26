@@ -14,8 +14,8 @@ Other changes over upstream:
 - `Encode H3 Video Refpack` gains a **`duration`** (seconds) input: stretch or shrink the pose video to
   the H3-aligned frame count without fps math (`5 s` → `124` frames, `10 s` → `243`).
 - The encoder has a **`video_vision`** toggle: when off, the reference video is kept out of the text
-  encoder (one frame only) while the full VAE latent still drives positions and motion — much cheaper
-  text encoding.
+  encoder (one frame only). Cheaper, but the subject often freezes — the latent alone does not carry the
+  motion semantics. Shrink `reference_megapixels` instead when you need to save time.
 - Tooltips on `fps`, `duration`, `frame_policy` and `reference_megapixels`.
 - Installs from `git clone` as-is: the shared package is discovered under its `-keyposes` folder name.
 
