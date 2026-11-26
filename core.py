@@ -254,7 +254,7 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False,
             elif not any(e["kind"] == "image" for e in g["entries"]):
                 for label in ls:
                     mapping = next((e.get("proxy_colors") or e.get("standin_map") for e in g["entries"] if e.get("proxy_colors") or e.get("standin_map")), "")
-                    definitions.append(f"{label} is a key-pose reference, not footage: a sequence of held poses separated by cuts, in playback order; the motion between the poses is generated smoothly. Each colored stand-in is exactly one person, and that person's body follows the stand-in's positions, occlusion and camera height. The stand-ins' colors and surfaces are never shown and are replaced by the real appearance of those people." + (f" Colour mapping: {mapping}" if mapping else ""))
+                    definitions.append(f"{label} is a key-pose reference, not footage: a sequence of held poses separated by cuts, in playback order; the motion between the poses is generated smoothly. Each colored stand-in is exactly one person, and that person's body follows the stand-in's positions, occlusion and camera height, keeping each person on the same side of the frame as its stand-in. The stand-ins' colors and surfaces are never shown and are replaced by the real appearance of those people." + (f" Colour mapping: {mapping}" if mapping else ""))
         elif g["role"] in ("video", "motion"):
             if g["role"] == "motion":
                 alias = f"<Motion {g['role_id']}>"
