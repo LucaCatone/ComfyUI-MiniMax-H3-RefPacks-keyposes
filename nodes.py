@@ -406,6 +406,7 @@ class BExplainsInspectRefPacks:
                     "prompt_format":(["H3 Video","H3 Image"],{"tooltip":"Only controls the optional compiled prompt preview; no model or text encoder is loaded."}),
                     "auto_outfit":("BOOLEAN",{"default":True}),
                     "allow_raw_prompt":("BOOLEAN",{"default":False, "tooltip":"Match Allow Raw Prompt on the H3 encoder to preview the exact structured prompt without expansion."}),
+                    "length":("INT",{"default":0, "min":0, "max":4096, "tooltip":"Output frame count. Set it to the encoder's length so key frame timecodes in the preview match the generated clip."}),
                     "vae":("VAE",{"tooltip":"Matching image/video VAE to reconstruct full visual latents; omit to return cached reference pixels."}),
                     "audio_vae":("VAE",{"tooltip":"Matching H3 audio VAE for reconstructing stored audio."})}}
     RETURN_TYPES = (SET_TYPE,"STRING","STRING","IMAGE","AUDIO")
@@ -416,7 +417,7 @@ class BExplainsInspectRefPacks:
     OUTPUT_NODE = True
     DESCRIPTION = "Inspect every Picture/Video/Audio slot and its source pack before text encoding. Run only this node to avoid downstream encoding/sampling. Optional prompt preview uses the same compiler; match prompt format and auto_outfit to the conditioning node."
 
-    def inspect(self,references,prompt="",prompt_format="H3 Video",auto_outfit=True,allow_raw_prompt=False,audio_vae=None,vae=None):
+    def inspect(self,references,prompt="",prompt_format="H3 Video",auto_outfit=True,allow_raw_prompt=False,audio_vae=None,vae=None,length=0):
         layout=list(reference_layout(references))
         lines=["REFERENCE TAG MAP — native presentation order", ""]
         for gi,ei,e,label in layout:
@@ -440,7 +441,7 @@ class BExplainsInspectRefPacks:
         preview_error=""
         if prompt.strip():
             try:
-                compiled=assemble(references,prompt,_target(prompt_format),auto_outfit,allow_raw_prompt=allow_raw_prompt)[0]
+                compiled=assemble(references,prompt,_target(prompt_format),auto_outfit,allow_raw_prompt=allow_raw_prompt,shot_frames=length or None)[0]
             except ValueError as error:
                 preview_error=f"\n\nPROMPT PREVIEW ERROR: {error}\nThe tag map above remains available; correct the prompt and inspect again."
         display=mapping + (preview_error or (f"\n\nCOMPILED PROMPT PREVIEW ({prompt_format})\n{compiled}" if compiled else "\n\nAdd an optional prompt to preview its compiled form. No text encoder has run."))
