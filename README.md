@@ -1,13 +1,23 @@
 # MiniMax H3 RefPacks — keyposes fork
 
 A fork of [BExplains MiniMax H3 RefPacks](https://github.com/BExplains/ComfyUI-MiniMax-H3-RefPacks)
-that adds one role: **`keyposes`**.
+that adds a **`keyposes`** role plus a few quality-of-life tweaks.
 
-> Assign it a pack of still key frames (or a single pose video) and the compiled prompt treats them as
-consecutive moments of one continuous take, instead of as portraits or separate shots. Each frame is
-labelled with its moment in `retention_analysis`, and `detailed_description` gets a compact timing list
-whose timestamps are spread evenly across the shot length — so the reference no longer has to match
-the output duration.
+**`keyposes`** accepts either still key frames (image pack) or a single pose video. The compiled prompt
+treats them as discrete key poses held at their moment — one continuous take, motion generated between
+poses — never as portraits or separate shots. Each frame is labelled with its timestamp in
+`retention_analysis`, and `detailed_description` gets a compact timing list spread across the shot
+length, so the reference no longer has to match the output duration.
+
+Other changes over upstream:
+
+- `Encode H3 Video Refpack` gains a **`duration`** (seconds) input: stretch or shrink the pose video to
+  the H3-aligned frame count without fps math (`5 s` → `124` frames, `10 s` → `243`).
+- The encoder has a **`video_vision`** toggle: when off, the reference video is kept out of the text
+  encoder (one frame only) while the full VAE latent still drives positions and motion — much cheaper
+  text encoding.
+- Tooltips on `fps`, `duration`, `frame_policy` and `reference_megapixels`.
+- Installs from `git clone` as-is: the shared package is discovered under its `-keyposes` folder name.
 
 ---
 
