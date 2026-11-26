@@ -448,6 +448,9 @@ class BExplainsInspectRefPacks:
         for g in references['groups']:
             counts={kind:sum(e['kind']==kind for e in g['entries']) for kind in ('image','video','audio')}
             lines.append(f"{g.get('source_file') or g['name']}: {counts['image']} picture(s), {counts['video']} video(s), {counts['audio']} audio clip(s)")
+            proxy_colors=next((e.get("proxy_colors") or e.get("standin_map") for e in g["entries"] if e.get("proxy_colors") or e.get("standin_map")), "")
+            if proxy_colors:
+                lines.append(f"    proxy colours: {proxy_colors}")
         mapping='\n'.join(lines)
         compiled=""
         preview_error=""
