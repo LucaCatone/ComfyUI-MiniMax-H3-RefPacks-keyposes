@@ -329,7 +329,7 @@ class BExplainsH3RefPackConditioning:
             else:
                 import comfy.model_management
                 latent = {"samples": torch.zeros([batch_size,24,1,height//16,width//16],device=comfy.model_management.intermediate_device())}
-        compiled, blocks, items, mapping = assemble(references,prompt,task,auto_outfit,allow_raw_prompt=allow_raw_prompt)
+        compiled, blocks, items, mapping = assemble(references,prompt,task,auto_outfit,allow_raw_prompt=allow_raw_prompt,shot_frames=actual_length if intent == "h3_video" else None)
         tokenize_args = {"minimax_ref_items": items} if task == "h3_video" else {"images": [i["data"] for i in items], "picture_label": "Picture %d: "}
         if intent == "h3_video":
             mapping += "\nReference policy: " + ("Compress Motion — complete source clips" if compress_motion else "native leading window, capped at output length")
@@ -427,7 +427,7 @@ class BExplainsInspectRefPacks:
         subjects = subject_numbers(references)
         for gi,g in enumerate(references['groups']):
             tags=[label for index,_,_,label in layout if index == gi]
-            alias={"subject":"Subject","character":"Character","item":"Item","motion":"Motion","outfit":"Outfit","location":"Location","style":"Style"}.get(g['role'])
+            alias={"subject":"Subject","character":"Character","item":"Item","motion":"Motion","keyposes":"Poses","outfit":"Outfit","location":"Location","style":"Style"}.get(g['role'])
             title=f"<{alias} {g['role_id']}>" if alias else f"{g['role']} {g['role_id']}"
             subject = f"<Subject {subjects[gi]}> -> " if g["role"] in ("character", "item") else ""
             lines.append(f"{title} -> {subject}{', '.join(tags)}")

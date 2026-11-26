@@ -162,7 +162,14 @@ def is_raw_prompt(prompt):
     return isinstance(value, dict) and bool(RAW_PROMPT_SECTIONS.intersection(value))
 
 
-def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False):
+def _timecode(frame):
+    """mm:ss.mmm at 24 fps, for beat timestamps in the compiled prompt."""
+    seconds = int(round(frame)) / 24.0
+    minutes = int(seconds // 60)
+    return f"{minutes:02d}:{seconds - minutes * 60:06.3f}"
+
+
+def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False, shot_frames=None):
     ordered = list(reference_layout(references))
     if task not in ("h3_image", "h3_video"):
         raise ValueError("Unsupported receiving model family.")
@@ -189,9 +196,11 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False)
         items.append(item)
     definitions, outfit_aliases, location_aliases, report, subject_ids = [], {}, {}, [], set()
     typed_aliases, item_ids, wearer_ids, character_ids = {}, set(), set(), set()
+    keypose_labels = []
+    keypose_frames = []
     subjects = subject_numbers(references)
     outfit_labels = set()
-    presentation_order = sorted(enumerate(references["groups"]), key=lambda pair: ({"subject": 0, "character": 0, "item": 0, "outfit": 1, "location": 2, "style": 3, "reference": 3, "video": 4, "motion": 4, "audio":5}[pair[1]["role"]], subjects.get(pair[0], pair[1]["role_id"])))
+    presentation_order = sorted(enumerate(references["groups"]), key=lambda pair: ({"subject": 0, "character": 0, "item": 0, "outfit": 1, "location": 2, "style": 3, "reference": 3, "video": 4, "motion": 4, "keyposes": 4, "audio":5}[pair[1]["role"]], subjects.get(pair[0], pair[1]["role_id"])))
     for gi, g in presentation_order:
         ls = [labels[(gi, ei)] for ei in range(len(g["entries"]))]
         report.append(f"{g['role']} {g['role_id']}: {g['name']} -> {', '.join(ls)}")
@@ -230,6 +239,17 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False)
             typed_aliases[alias] = " and ".join(ls)
             report[-1] = f"{alias}: {g['name']} -> {', '.join(ls)}"
             definitions.append(f"{' and '.join(ls)} supplies the visual style reference; use its aesthetic, colors, lighting and rendering style as requested, without defining an additional subject.")
+        elif g["role"] == "keyposes":
+            alias = f"<Poses {g['role_id']}>"
+            typed_aliases[alias] = " and ".join(ls)
+            report[-1] = f"{alias}: {g['name']} -> {', '.join(ls)}"
+            keypose_labels.extend(ls)
+            if all(e["kind"] == "image" for e in g["entries"]):
+                keypose_frames.extend(ls)
+                definitions.append(f"{' and '.join(ls)} are consecutive key frames of the same shot, in this order. Each picture is one moment of one continuous take: treat them as frames of the target video, never as portraits, separate subjects or separate shots.")
+            elif not any(e["kind"] == "image" for e in g["entries"]):
+                for label in ls:
+                    definitions.append(f"{label} is a pose reference, not footage: it shows the key poses of the shot in playback order, one held pose at a time, with hard cuts between them. It defines only which pose comes when; it is never shown in the target video, and its stand-in surfaces and still-frame cadence are discarded.")
         elif g["role"] in ("video", "motion"):
             if g["role"] == "motion":
                 alias = f"<Motion {g['role_id']}>"
@@ -254,7 +274,7 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False)
     explicit_outfit = any(alias in text for alias in outfit_aliases) or any(label in text for label in outfit_labels)
     for alias, actual in {**typed_aliases, **outfit_aliases, **location_aliases}.items():
         text = text.replace(alias, actual)
-    unknown_role = re.search(r"<(Character|Item|Motion|Outfit|Location|Style) \d+>", text)
+    unknown_role = re.search(r"<(Character|Item|Motion|Poses|Outfit|Location|Style) \d+>", text)
     if unknown_role:
         raise ValueError(f"Prompt refers to missing {unknown_role.group(0)}. Check the reference map.")
     if auto_outfit and len(outfit_aliases) == 1 and len(wearer_ids) == 1 and not explicit_outfit:
@@ -276,9 +296,25 @@ def assemble(references, prompt, task, auto_outfit=True, allow_raw_prompt=False)
             if i in character_ids else
             f"<Subject {i}>: preserve defining visual features; apply an explicitly referenced outfit where requested."
             for i in sorted(subject_ids))
+        keypose_times = {}
+        if len(keypose_frames) > 1 and shot_frames and shot_frames > 1:
+            keypose_times = {label: _timecode(i * (shot_frames - 1) / (len(keypose_frames) - 1)) for i, label in enumerate(keypose_frames)}
+        keypose_retention = "\n".join(
+            f"{label} (key frame at {keypose_times[label]}): weak_reference - reproduced at that moment of the take; it is never shown as a still image, and the motion between key frames is continuous."
+            if label in keypose_times else
+            f"{label} (key frame in order): weak_reference - reproduced in that order within one continuous take; it is never shown as a still image, and the motion between key frames is continuous."
+            if label in keypose_frames else
+            f"{label} (key poses, their order, body placement, camera height): weak_reference - each key pose is reproduced in sequence with the same body placement and camera height; its stand-in surfaces, hard cuts and still-frame cadence are discarded and never appear."
+            for label in keypose_labels)
+        retention = subject_retention
+        if keypose_retention:
+            retention = (retention + "\n" if retention else "") + keypose_retention
+        detail = text
+        if keypose_times:
+            detail = text.rstrip() + " The key frames are consecutive moments of this single continuous take, at: " + "; ".join(f"{t} {label}" for label, t in keypose_times.items()) + "."
         compiled = ("subject_definitions:\n" + "\n".join(definitions) + "\n\nsummary:\n" + text
-                    + "\n\nretention_analysis:\n" + (subject_retention or "Preserve the explicitly referenced visual content.")
-                    + "\n\ndetailed_description:\n" + text
+                    + "\n\nretention_analysis:\n" + (retention or "Preserve the explicitly referenced visual content.")
+                    + "\n\ndetailed_description:\n" + detail
                     + "\n\noverall_soundscape:\n" + soundscape + "\n\nnon_diegetic_music:\n" + music)
     else:
         compiled = "subject_definitions:\n" + "\n".join(definitions) + "\n\ndescription:\n" + text

@@ -9,7 +9,7 @@ if "bexplains_refpacks" not in sys.modules:
     import folder_paths
     roots.extend(Path(root) for root in folder_paths.get_folder_paths("custom_nodes"))
     candidates = [root / name / "__init__.py" for root in dict.fromkeys(roots)
-                  for name in ("bexplains-refpacks", "ComfyUI-RefPacks", "BExplains_RefPacks")]
+                  for name in ("bexplains-refpacks", "ComfyUI-RefPacks", "BExplains_RefPacks", "ComfyUI-RefPacks-keyposes")]
     shared = next((path for path in candidates if path.is_file()), None)
     if shared is None:
         raise ImportError(
