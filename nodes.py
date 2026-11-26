@@ -89,7 +89,7 @@ class BExplainsH3EncodeImages:
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {"vae": ("VAE",), "images": ("IMAGE",), "name": ("STRING", {"default": "character"}),
-                             "reference_megapixels": ("FLOAT", {"default": 0.3, "min": 0.01, "max": 8.0, "step": 0.05})}}
+                             "reference_megapixels": ("FLOAT", {"default": 0.3, "min": 0.01, "max": 8.0, "step": 0.05, "tooltip": "Max area for the encoded image; downscales only. Keep 0.3+ for identity (character sheets); 0.1 is enough for key poses."})}}
     RETURN_TYPES = (PACK_TYPE,)
     RETURN_NAMES = ("refpack",)
     FUNCTION = "encode"
@@ -115,10 +115,10 @@ class BExplainsH3EncodeImages:
 class BExplainsH3EncodeVideo:
     @classmethod
     def INPUT_TYPES(cls):
-        return {"required": {"vae": ("VAE",), "frames": ("IMAGE",), "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 240.0}),
+        return {"required": {"vae": ("VAE",), "frames": ("IMAGE",), "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 240.0, "tooltip": "Source frame rate of the decoded frames; used only when duration is 0. Lowering it stretches the clip (5 frames at 1 fps -> ~124 frames). Prefer duration for discrete poses."}),
                              "name": ("STRING", {"default": "dance"}),
-                             "reference_megapixels": ("FLOAT", {"default": 0.3, "min": 0.01, "max": 2.0, "step": 0.05}),
-                             "frame_policy": (["pad final frame", "trim tail"],)},
+                             "reference_megapixels": ("FLOAT", {"default": 0.3, "min": 0.01, "max": 2.0, "step": 0.05, "tooltip": "Max area for the encoded reference; downscales only, never upscales. 0.3 keeps ~416x736; 0.1 is enough for pose/motion references and is cheaper."}),
+                             "frame_policy": (["pad final frame", "trim tail"], {"tooltip": "How to snap to the 17n+5 grid when the count is off: pad duplicates the last frame (keeps the ending), trim drops the tail (can lose up to 16 frames)."})},
                 "optional": {"duration": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 170.0, "step": 0.05,
                     "tooltip": "Target reference length in seconds. When > 0 it overrides fps and stretches or shrinks the input frames to the H3-aligned frame count (e.g. 5 s -> 124 frames)."})}}
     RETURN_TYPES = (PACK_TYPE,)
