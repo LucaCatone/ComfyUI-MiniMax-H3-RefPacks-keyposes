@@ -53,13 +53,8 @@ configuration that was tested; treat them as defaults, not laws.
 | `reference_megapixels` | `0.3` (0.2 works, 0.1 does not) | 0.1 is too coarse for body poses; 0.3 is the tested size |
 | `frame_policy` | pad final frame | keeps the last pose instead of trimming it |
 
-Current configuration: 5 stills, `duration = 3`, `reference_megapixels = 0.3`, role `keyposes`,
-output `length = 124`, `video_vision` on, one character pack at 1.0 MP.
-
-With this configuration the room, the hands and the final beat are correct. The remaining defect is the
-pose transfer: the character keeps roughly one posture instead of following the five poses. Raising
-`duration` to 5 (a 124-frame reference matching the output) did **not** change that, so the duration
-mismatch is not the confirmed cause.
+Typical configuration: a handful of stills, `duration` equal to the shot length,
+`reference_megapixels` 0.2-0.3, role `keyposes`, `video_vision` on, one character pack at 0.6-1.0 MP.
 
 ### 2b. Known limitations
 
@@ -73,7 +68,7 @@ mismatch is not the confirmed cause.
 - The pose transfer is still the open problem with this role: the subject tends to hold one posture even
   when the reference contains clearly different poses. `proxy_colors`, `0.3` MP and matching durations
   are all in place; what remains is the model's weak binding between held poses and the rendered body.
-  A hard `AddGuide` on the first and last pose is the reliable workaround today.
+  A hard keyframe generally binds better than a soft reference.
 
 ### 3. Wire it
 
@@ -113,6 +108,9 @@ The compiler adds the pose definitions, one retention line per pose, and the tim
 - [ ] character pack at 0.3 MP or more, pose pack at 0.2-0.3 MP
 - [ ] instruction names subjects and order; no timestamps needed
 - [ ] `video_vision` on
+
+---
+
 
 ---
 
